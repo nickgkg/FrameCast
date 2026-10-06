@@ -1,0 +1,10 @@
+[Unit]
+Description=FrameCast "Cast to TV" SteamVR dashboard panel
+
+[Service]
+ExecStart=%h/FrameCast/bin/framecast-ui
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

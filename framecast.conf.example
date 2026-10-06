@@ -1,0 +1,36 @@
+# FrameCast settings. Copy to framecast.conf (install.sh does this once) and edit.
+
+# Chromecast device name, as shown by "framecast.sh list" (device_name=...).
+DEVICE="Living Room"
+
+# stream = Cast Streaming to the TV's built-in screen-mirroring receiver (about 0.3 s delay).
+# hls    = HLS to the Default Media Receiver (about 6 s delay). Fallback.
+MODE=stream
+
+# stream mode: the TV's playout buffer in milliseconds. Lower = less delay, but more stutter on weak Wi-Fi.
+DELAY=120
+
+# stream mode: hw = the Frame's hardware H.264 encoder, x264 = software encoder (uses more CPU).
+ENCODER=hw
+
+# 1 = also send the headset audio to the TV. In hls mode it plays a few seconds late.
+AUDIO=1
+AUDIO_BITRATE=128k
+
+# Output video.
+WIDTH=1280
+HEIGHT=720
+FPS=30
+BITRATE=4M
+
+# The settings below are for MODE=hls only.
+
+# HLS segment length in seconds. Lower = less delay on the TV, higher = fewer stalls.
+SEGMENT=1
+
+# Segments in the live playlist. The Chromecast starts at the oldest one,
+# Delay on the TV is about 6 seconds with 1 x 5. Raise these if the TV stalls.
+PLAYLIST=5
+
+# Zoom while "Keep the horizon level" is on. Higher hides more of the rotated corners but shows less.
+STAB_ZOOM=1.2

@@ -1,0 +1,5 @@
+# Built or downloaded by install.sh / sender/build-sender.sh
+bin/
+src/stabilize_spv.h
+# Local settings on the Frame
+framecast.conf

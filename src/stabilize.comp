@@ -1,0 +1,38 @@
+#version 450
+// Rotate (and zoom) the headset view around its center so the horizon stays level.
+// Compiled on the PC with: glslc -O -mfmt=c src/stabilize.comp -o src/stabilize_spv.h
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D src;              // Headset view (usually an sRGB format).
+layout(binding = 1, rgba8) uniform writeonly image2D dst; // Output, written as sRGB-encoded bytes.
+
+layout(push_constant) uniform Params {
+    vec2 uvMin;      // Valid area of the source texture.
+    vec2 uvMax;
+    vec2 outSize;    // Output size in pixels.
+    float cosA;      // Rotation, counterclockwise as seen on screen.
+    float sinA;
+    float zoom;
+    int srgbSource;  // 1 = sampling returns linear values; encode them back to sRGB.
+} p;
+
+vec3 linearToSrgb(vec3 c) {
+    return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}
+
+void main() {
+    ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+    if (px.x >= int(p.outSize.x) || px.y >= int(p.outSize.y)) return;
+
+    // Pixel space, origin at the center, y down. Square pixels, so the rotation is not distorted.
+    vec2 q = (vec2(px) + 0.5) - 0.5 * p.outSize;
+    vec2 s = vec2(p.cosA * q.x - p.sinA * q.y, p.sinA * q.x + p.cosA * q.y) / p.zoom;
+    vec2 uv = s / p.outSize + 0.5;
+
+    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+    if (all(greaterThanEqual(uv, vec2(0.0))) && all(lessThanEqual(uv, vec2(1.0)))) {
+        color = vec4(texture(src, mix(p.uvMin, p.uvMax, uv)).rgb, 1.0);
+        if (p.srgbSource == 1) color.rgb = linearToSrgb(color.rgb);
+    }
+    imageStore(dst, px, color);
+}

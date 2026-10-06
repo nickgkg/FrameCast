@@ -1,0 +1,57 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 7c41e6d8..11324f26 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -65,7 +65,7 @@ group("gn_all") {
+     if (!build_with_chromium) {
+       deps += [
+         "cast/standalone_sender:cast_sender",
+-        "cast/castbridge:castbridge",
++        "cast/framecast_sender:framecast_sender",
+         "osp:osp_demo",
+         "third_party/protobuf:protoc($host_toolchain)",
+         "third_party/zlib",
+diff --git a/cast/common/BUILD.gn b/cast/common/BUILD.gn
+index b6c69ad8..c97eee48 100644
+--- a/cast/common/BUILD.gn
++++ b/cast/common/BUILD.gn
+@@ -14,6 +14,7 @@ config("certificate_config") {
+     "../standalone_receiver:cast_receiver",
+     "../standalone_sender:cast_sender",
+     "../castbridge:*",
++    "../framecast_sender:*",
+   ]
+   defines = []
+ }
+@@ -57,6 +58,7 @@ openscreen_source_set("certificate_boringssl") {
+     "../standalone_receiver:cast_receiver",
+     "../standalone_sender:cast_sender",
+     "../castbridge:*",
++    "../framecast_sender:*",
+     "../test:*",
+     "//components/media_router/common/providers/cast/channel:*",
+   ]
+diff --git a/discovery/BUILD.gn b/discovery/BUILD.gn
+index 6781c28e..0475a12b 100644
+--- a/discovery/BUILD.gn
++++ b/discovery/BUILD.gn
+@@ -88,6 +88,7 @@ openscreen_source_set("dnssd") {
+     "../cast/standalone_receiver:*",
+     "../cast/standalone_sender:*",
+     "../cast/castbridge:*",
++    "../cast/framecast_sender:*",
+     "../osp/impl",
+   ]
+   public = []
+diff --git a/platform/BUILD.gn b/platform/BUILD.gn
+index 8c1d3de3..67e97330 100644
+--- a/platform/BUILD.gn
++++ b/platform/BUILD.gn
+@@ -106,6 +106,7 @@ if (!is_ios) {
+       "../cast/standalone_receiver:cast_receiver",
+       "../cast/standalone_sender:cast_sender",
+       "../cast/castbridge:*",
++      "../cast/framecast_sender:*",
+       "../cast/test:e2e_tests",
+       "../osp:osp_demo",
+       "../test:test_main",
