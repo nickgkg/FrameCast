@@ -38,7 +38,7 @@ static const uint32_t kStabilizeSpv[] =
 ;
 
 struct StabParams {
-    float uvMin[2], uvMax[2], outSize[2];
+    float uvMin[2], uvMax[2], outSize[2], srcSize[2];
     float cosA, sinA, zoom;
     int32_t srgbSource;
 };
@@ -313,6 +313,7 @@ int main(int argc, char **argv) {
 
                 // The head rolled left by `angle`, so the world looks rotated clockwise: turn it back counterclockwise.
                 StabParams pc{{b.uMin, b.vMin}, {b.uMax, b.vMax}, {(float)W, (float)H},
+                              {(b.uMax - b.uMin) * vt->m_nWidth, (b.vMax - b.vMin) * vt->m_nHeight},
                               cosf(angle), sinf(angle), curZoom, isSrgb(vt->m_nFormat) ? 1 : 0};
                 vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_COMPUTE, pipe);
                 vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_COMPUTE, pl, 0, 1, &ds, 0, nullptr);

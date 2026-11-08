@@ -10,6 +10,7 @@ layout(push_constant) uniform Params {
     vec2 uvMin;      // Valid area of the source texture.
     vec2 uvMax;
     vec2 outSize;    // Output size in pixels.
+    vec2 srcSize;    // Size of the valid source area in pixels.
     float cosA;      // Rotation, counterclockwise as seen on screen.
     float sinA;
     float zoom;
@@ -24,10 +25,14 @@ void main() {
     ivec2 px = ivec2(gl_GlobalInvocationID.xy);
     if (px.x >= int(p.outSize.x) || px.y >= int(p.outSize.y)) return;
 
-    // Pixel space, origin at the center, y down. Square pixels, so the rotation is not distorted.
-    vec2 q = (vec2(px) + 0.5) - 0.5 * p.outSize;
+    // The output stretches the source to fill it (like the plain blit), so the two aspect ratios usually differ
+    // (e.g. a square eye view on a 16:9 TV). Rotate in *source* pixel space, origin at the center, y down: there the
+    // pixels are square, so the rotation is rigid and cancels the HMD roll exactly. Rotating in output pixel space
+    // would mix in the stretch and get the horizon angle wrong (roughly half the tilt left over on a 16:9 TV).
+    vec2 n = (vec2(px) + 0.5) / p.outSize - 0.5;  // Output position, -0.5..0.5.
+    vec2 q = n * p.srcSize;                       // Same point in source pixels.
     vec2 s = vec2(p.cosA * q.x - p.sinA * q.y, p.sinA * q.x + p.cosA * q.y) / p.zoom;
-    vec2 uv = s / p.outSize + 0.5;
+    vec2 uv = s / p.srcSize + 0.5;
 
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     if (all(greaterThanEqual(uv, vec2(0.0))) && all(lessThanEqual(uv, vec2(1.0)))) {
