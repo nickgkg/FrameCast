@@ -36,8 +36,11 @@ In the headset: open the SteamVR dashboard → **Cast to TV** panel.
 
 - Click **Cast here** on a Chromecast. Status goes yellow ("Starting…"), then green after ~3 s.
 - **Keep the horizon level** switch: the TV picture turns against your head roll, so the horizon stays
-  level (zoomed 1.2× to hide the corners at small tilts; `STAB_ZOOM`). Works during a running cast, and
-  fades out when you look almost straight up or down. The choice is kept in `~/FrameCast/stabilize`.
+  level at any tilt (black corners show while it is rotated; `STAB_ZOOM` above 1 zooms in to hide them).
+  While it is on, SteamVR's own headset view stabilizer (`videoCaptureViewStabilize`/`RemoveRoll`, which
+  only levels up to ~45° and lags 0.2 s) is switched off; turning it off or stopping the cast restores it.
+  Works during a running cast, and fades out when you look almost straight up or down. The choice is kept
+  in `~/FrameCast/stabilize`.
 - Click **Stop** to end it. A headset notification shows on start, stop and errors.
 - The list refreshes each time the panel opens (if older than 15 s) and with **Refresh**, so any
   Chromecast on the current Wi-Fi shows up by its normal name. The last used one is listed first.
@@ -70,7 +73,7 @@ framecap ──raw RGBA──▶ ffmpeg (x264) ──HLS──▶ castserver.py 
 | File | Role |
 |---|---|
 | `src/framecap.cpp` | Reads the SteamVR "Headset View" via `IVROverlayView::AcquireOverlayView` on overlay `system.HeadsetView` (works while hidden), GPU-blits to 1280×720, writes frames to stdout at a fixed rate. With stabilization on it uses the compute shader instead of the blit. `--test-roll DEG` forces a roll for testing (e.g. with `--overlay framecast.panel` as a known image). |
-| `src/stabilize.comp` | Compute shader: rotate + zoom around the center, re-encode sRGB. Compiled on the Frame by `install.sh` (`glslc` is on the Frame, not the PC) into `src/stabilize_spv.h`. |
+| `src/stabilize.comp` | Compute shader: rotate (+ optional zoom) around the center with 2×2 samples per pixel, re-encode sRGB. Compiled on the Frame by `install.sh` (`glslc` is on the Frame, not the PC) into `src/stabilize_spv.h`. |
 | `src/hwenc.c` | Hardware H.264 encoder (qcom-iris, `/dev/video-enc0`) through the V4L2 stateful encoder API. RGBA in (the encoder converts), Annex-B with AUDs out, ~4 ms per frame. `-k FIFO`: forces an IDR for each byte that framecast_sender writes there. `ENCODER=x264` uses software x264 instead. |
 | `sender/` | `framecast_sender`: Open Screen (libcast) sender. Connects, launches the mirroring app, negotiates H.264 (+ Opus with `-A`), splits the H.264 stream on AUD NALs and sends each frame with `cast::Sender` (retransmits on NACK). Writes its state to `$XDG_RUNTIME_DIR/framecast.sender`. Cross-compiled on the PC by `sender/build-sender.sh` into `bin/framecast_sender`. `--vp8` reads IVF instead (test option). |
 | `framecast.sh` | Runs the pipeline as the transient systemd user unit `framecast`, writes `$XDG_RUNTIME_DIR/framecast.state`. HLS mode also starts the Chromecast and runs a watchdog. |

@@ -33,4 +33,4 @@ SEGMENT=1
 PLAYLIST=5
 
 # Zoom while "Keep the horizon level" is on. Higher hides more of the rotated corners but shows less.
-STAB_ZOOM=1.2
+STAB_ZOOM=1.0

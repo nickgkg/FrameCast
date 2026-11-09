@@ -29,7 +29,7 @@ ENCODER=hw             # stream mode: hw = hardware H.264 encoder (hwenc), x264 
 PORT=8090
 SEGMENT=1              # HLS segment length in seconds; lower = less delay, higher = fewer stalls
 PLAYLIST=5             # segments in the live playlist; the Chromecast starts at the oldest one
-STAB_ZOOM=1.2          # zoom while the horizon is kept level (hides the rotated corners for small tilts)
+STAB_ZOOM=1.0          # zoom while the horizon is kept level (above 1 hides the rotated corners)
 HLS_DIR=/tmp/framecast
 STAB_FILE="$HERE/stabilize"   # "1" = keep the horizon level; the panel writes it, framecap reads it live
 STATE_FILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/framecast.state"

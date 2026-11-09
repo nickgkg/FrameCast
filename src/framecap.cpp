@@ -6,11 +6,12 @@
 // (works while the overlay is hidden). Each frame is blitted on the GPU to the output size and read back.
 // The standard mirror APIs (GetMirrorTextureGL, IVROverlay::GetOverlayTexture) do not work on the Frame.
 //
-// Stabilization ("keep the horizon level"): when the --control file contains 1, each frame is rotated against the
-// HMD roll by a compute shader (stabilize.comp) instead of the plain blit. The file is checked twice a second, so
-// the mode changes during a running cast. Near straight up/down the roll is undefined and the correction fades out.
+// Stabilization ("keep the horizon level"): when the --control file contains 1, SteamVR's own headset view stabilizer
+// is switched off (see setSteamVRStabilizer) and each frame is rotated against the HMD roll by a compute shader
+// (stabilize.comp) instead of the plain blit. The file is checked twice a second, so the mode changes during a running
+// cast. Near straight up/down the roll is undefined and the correction fades out.
 //
-// Usage: framecap [--width 1280] [--height 720] [--fps 30] [--control FILE] [--zoom 1.2] | ffmpeg -f rawvideo -pix_fmt rgba -s 1280x720 -framerate 30 -i - ...
+// Usage: framecap [--width 1280] [--height 720] [--fps 30] [--control FILE] [--zoom 1.0] | ffmpeg -f rawvideo -pix_fmt rgba -s 1280x720 -framerate 30 -i - ...
 #include <chrono>
 #include <cmath>
 #include <csignal>
@@ -71,6 +72,19 @@ static bool hmdRoll(float &roll, float &weight) {
     return true;
 }
 
+// SteamVR has its own headset view stabilizer ("videoCaptureView*" in the steamvr settings section): it removes the
+// head roll up to a limit and smooths the view over 0.2 s. Stacked on our rotation it overcorrects, and its smoothing
+// cannot be matched from the current pose, so while we level the horizon it is switched off and the view follows the
+// head exactly. Turning it back on removes our override, which restores SteamVR's default (also after a crash).
+static void setSteamVRStabilizer(bool on) {
+    for (const char *key : {"videoCaptureViewStabilize", "videoCaptureViewRemoveRoll"}) {
+        vr::EVRSettingsError err = vr::VRSettingsError_None;
+        if (on) vr::VRSettings()->RemoveKeyInSection("steamvr", key, &err);
+        else vr::VRSettings()->SetBool("steamvr", key, false, &err);
+        if (err != vr::VRSettingsError_None) LOG("cannot change steamvr/%s: %d\n", key, err);
+    }
+}
+
 static std::vector<std::string> split(const char *s) {
     std::vector<std::string> v; std::istringstream is(s); std::string t;
     while (is >> t) v.push_back(t);
@@ -125,7 +139,7 @@ static Vk initVulkan() {
 
 int main(int argc, char **argv) {
     uint32_t W = 1280, H = 720, fps = 30;
-    float zoom = 1.2f;
+    float zoom = 1.0f;
     const char *key = "system.HeadsetView";
     const char *control = nullptr;
     float testRoll = NAN; // --test-roll DEG: fixed roll instead of the HMD pose (for testing).
@@ -227,6 +241,7 @@ int main(int argc, char **argv) {
     std::map<VkImage, VkImageView> srcViews; // The compositor cycles through a few images.
 
     bool stabOn = readControl(control);
+    setSteamVRStabilizer(!stabOn);
     float stabWeight = stabOn ? 1.0f : 0.0f; // Eases between off and on so a toggle does not jump.
     auto lastControlCheck = std::chrono::steady_clock::now();
 
@@ -253,7 +268,10 @@ int main(int argc, char **argv) {
         if (tnow - lastControlCheck > std::chrono::milliseconds(500)) {
             lastControlCheck = tnow;
             bool on = readControl(control);
-            if (on != stabOn) LOG("stabilization %s\n", on ? "on" : "off");
+            if (on != stabOn) {
+                LOG("stabilization %s\n", on ? "on" : "off");
+                setSteamVRStabilizer(!on);
+            }
             stabOn = on;
         }
         stabWeight = std::clamp(stabWeight + (stabOn ? 1.0f : -1.0f) * 3.0f / fps, 0.0f, 1.0f);
@@ -389,6 +407,7 @@ int main(int argc, char **argv) {
     vkDeviceWaitIdle(v.dev);
     for (auto &kv : srcViews) vkDestroyImageView(v.dev, kv.second, nullptr);
     vr::VROverlayView()->ReleaseOverlayView(&view);
+    setSteamVRStabilizer(true);
     vr::VR_Shutdown();
     return 0;
 }

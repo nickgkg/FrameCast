@@ -313,7 +313,7 @@ static std::vector<Button> drawPanel(const View &v, cairo_surface_t *s) {
         text(c, "Keep the horizon level", r.x + 26, r.y + 36, 640);
         rgb(c, DIM);
         font(c, 22, false);
-        text(c, v.level ? "The TV picture turns against your head tilt" : "The TV picture tilts with your head",
+        text(c, v.level ? "The TV picture turns against your head tilt" : "Small head tilts are leveled, big ones show",
              r.x + 26, r.y + 64, 640);
         Rect sw{r.x + r.w - 26 - 104, r.y + 17, 104, 44};
         roundRect(c, sw, 22);
